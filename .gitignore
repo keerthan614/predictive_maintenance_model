@@ -1,0 +1,9 @@
+# Ignore the Python virtual environment
+pdm-env/
+
+# Ignore Python cache
+__pycache__/
+*.pyc
+
+# Ignore generated plots
+*.png
