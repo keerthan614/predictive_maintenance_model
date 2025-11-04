@@ -19,55 +19,56 @@ def main():
     """
     Main function to run the complete PDM pipeline.
     """
-    print("🚀 PDM (Predictive Data Maintenance) System")
+    print("PDM (Predictive Data Maintenance) System")
     print("=" * 60)
     
     # Step 1: Data Processing
-    print("\n1️⃣ DATA PROCESSING")
+    print("\n STEP 1: DATA PROCESSING")
     print("-" * 30)
     
-    processor = PDMDataProcessor()
-    processed_data = processor.process_all_data()
-    processor.save_processor('pdm_processor.pkl')
+    processor = PDMDataProcessor() #Create the processor (has scaler, encoders, sequence length, etc.)
+    processed_data = processor.process_all_data() #Load CSVs, engineer features (rolling stats, error/maint features), label failures (next 24h), scale, and create sequences.
+    processor.save_processor('pdm_processor.pkl') #Persist the scaler/encoders/feature list for reuse.
     
-    print(f"✅ Data processing completed!")
+    print(f"STEP 1: Data processing completed!")
     print(f"   Tabular samples: {processed_data['X_tabular'].shape[0]}")
     print(f"   Sequence samples: {processed_data['X_sequences'].shape[0]}")
     print(f"   Features: {len(processed_data['feature_columns'])}")
     print(f"   Failure rate: {processed_data['y_tabular'].mean():.3f}")
     
     # Step 2: Model Training
-    print("\n2️⃣ MODEL TRAINING")
+    print("\n STEP 2: MODEL TRAINING")
     print("-" * 30)
     
-    models = PDMPredictiveModels()
+    models = PDMPredictiveModels() #Create trainer; tell it which feature columns to expect (used for plots/exports).
     models.feature_columns = processed_data['feature_columns']
     
     # Train tabular models
-    print("🔄 Training tabular models...")
+    print("🔄 Training tabular models...") 
     X_test, y_test = models.train_tabular_models(
         processed_data['X_tabular'], 
         processed_data['y_tabular']
-    )
+    ) #Trains Random Forest, Gradient Boosting, Logistic Regression with CV grid search; evaluates; returns a test split (for potential further checks).
+    
     
     # Train sequence models
     print("\n🔄 Training sequence models...")
     cnn_lstm_history, lstm_history = models.train_sequence_models(
         processed_data['X_sequences'], 
         processed_data['y_sequences'],
-        epochs=50  # Reduced for demo
+        epochs=50  # Reduced for demo,Trains CNN-LSTM and LSTM on sequences for 50 epochs (with callbacks like EarlyStopping). Returns training histories.
     )
     
     # Plot training history
     models.plot_training_history(cnn_lstm_history, lstm_history)
     
     # Save models
-    models.save_models('pdm_models/')
+    models.save_models('pdm_models/') #training_hostory.png
     
     print("✅ Model training completed!")
     
     # Step 3: Real-time Inference Demo
-    print("\n3️⃣ REAL-TIME INFERENCE DEMO")
+    print("\n STEP 3: REAL-TIME INFERENCE DEMO")
     print("-" * 30)
     
     # Initialize inference pipeline
@@ -108,7 +109,7 @@ def main():
     
     # Batch prediction test
     print("\n🔄 Testing Batch Prediction...")
-    batch_telemetry = [create_sample_telemetry_data(i) for i in range(1, 6)]
+    batch_telemetry = [create_sample_telemetry_data(i) for i in range(1, 6)] #Build batches for 5 machines and predict for each (ensemble).
     batch_historical = [create_sample_historical_data(i) for i in range(1, 6)]
     batch_results = inference.batch_predict(batch_telemetry, batch_historical)
     
@@ -120,7 +121,7 @@ def main():
                   f"Urgency={pred.get('urgency_level', 'N/A')}")
         else:
             print(f"   {result['machine_id']}: Error - {pred['error']}")
-    
+    #Show ensemble probability, confidence, urgency, and which model types contributed.
     # Step 4: Supply Chain Optimization Demo
     print("\n4️⃣ SUPPLY CHAIN OPTIMIZATION DEMO")
     print("-" * 30)
@@ -202,27 +203,6 @@ def main():
     print("-" * 30)
     
     print("✅ PDM System Successfully Deployed!")
-    print("\n🎯 Key Achievements:")
-    print("   • Processed real PDM dataset with 876K+ telemetry records")
-    print("   • Trained 5 different ML models (CNN-LSTM, LSTM, RF, GB, LR)")
-    print("   • Built real-time inference pipeline")
-    print("   • Optimized supply chain inventory allocation")
-    print("   • Demonstrated significant business impact")
-    
-    print("\n📈 Business Value:")
-    print(f"   • Predicted {business_impact['total_predicted_failures']} potential failures")
-    print(f"   • Avoided {business_impact['emergency_shipments_avoided']} emergency shipments")
-    print(f"   • Generated ${business_impact['net_savings']:,.2f} in net savings")
-    print(f"   • Achieved {business_impact['roi_percentage']:.1f}% ROI")
-    
-    print("\n🚀 Next Steps:")
-    print("   1. Deploy models to production environment")
-    print("   2. Integrate with real-time sensor data streams")
-    print("   3. Set up automated alerting system")
-    print("   4. Implement continuous model retraining")
-    print("   5. Expand to additional machine types and components")
-    
-    print("\n🎉 PDM System Demo Completed Successfully!")
 
 if __name__ == '__main__':
     main()
